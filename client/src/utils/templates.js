@@ -151,6 +151,8 @@ export const SOCIAL_PRESETS = [
   { type: 'twitch', title: 'Twitch', icon: 'twitch', color: '#ffffff', urlPrefix: 'https://twitch.tv/' },
   { type: 'facebook', title: 'Facebook', icon: 'facebook', color: '#ffffff', urlPrefix: 'https://facebook.com/' },
   { type: 'linkedin', title: 'LinkedIn', icon: 'linkedin', color: '#ffffff', urlPrefix: 'https://linkedin.com/in/' },
+  { type: 'myanimelist', title: 'MyAnimeList', icon: 'myanimelist', color: '#ffffff', urlPrefix: 'https://myanimelist.net/profile/' },
+  { type: 'anilist', title: 'AniList', icon: 'anilist', color: '#ffffff', urlPrefix: 'https://anilist.co/user/' },
   { type: 'email', title: 'Email', icon: 'email', color: '#ffffff', urlPrefix: 'mailto:' },
 ];
 

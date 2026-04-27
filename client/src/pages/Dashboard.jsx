@@ -8,6 +8,7 @@ import StatsCard from '../components/StatsCard';
 import LinkEditor from '../components/LinkEditor';
 import SocialLinkSelector from '../components/SocialLinkSelector';
 import SocialIcon from '../components/SocialIcon';
+import { useLanguage } from '../hooks/useLanguage';
 
 const TABS = [
   { id: 'profile', label: '👤 Profile', },
@@ -19,6 +20,7 @@ const TABS = [
 export default function Dashboard() {
   const { user } = useAuth();
   const toast = useToast();
+  const { t } = useLanguage();
   const [tab, setTab] = useState('profile');
   const [profile, setProfile] = useState(null);
   const [links, setLinks] = useState([]);
@@ -184,6 +186,16 @@ export default function Dashboard() {
     setForm({ ...form, badges });
   }
 
+  function deviceLabel(device) {
+    if (device === 'mobile') return 'Mobile';
+    if (device === 'tablet') return 'Tablet';
+    return 'Desktop';
+  }
+
+  function formatDateTime(value) {
+    return value ? new Date(value).toLocaleString() : 'N/A';
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center pt-16">
@@ -198,12 +210,12 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-            <p className="text-gray-400 text-sm mt-1">Manage your profile and links</p>
+            <h1 className="text-2xl font-bold text-white">{t('dashboard')}</h1>
+            <p className="text-gray-400 text-sm mt-1">{t('manageProfile')}</p>
           </div>
           <div className="flex items-center gap-3">
             <button onClick={copyProfileUrl} className="px-4 py-2 text-sm rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 transition-all">
-              📋 Copy URL
+              {t('copyUrl')}
             </button>
             <a
               href={`/${form.username || user?.username}`}
@@ -211,24 +223,24 @@ export default function Dashboard() {
               rel="noopener noreferrer"
               className="px-4 py-2 text-sm rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 transition-all"
             >
-              👁 Preview
+              {t('preview')}
             </a>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06] mb-8 overflow-x-auto">
-          {TABS.map(t => (
+          {TABS.map(tabItem => (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+              key={tabItem.id}
+              onClick={() => setTab(tabItem.id)}
               className={`flex-1 min-w-fit px-4 py-2.5 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${
-                tab === t.id
+                tab === tabItem.id
                   ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
                   : 'text-gray-400 hover:text-gray-200 hover:bg-white/5 border border-transparent'
               }`}
             >
-              {t.label}
+              {t(tabItem.id) || tabItem.label}
             </button>
           ))}
         </div>
@@ -377,11 +389,11 @@ export default function Dashboard() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <button onClick={() => { setShowAddLink(true); setEditingLink(null); }}
                 className="glow-btn text-sm">
-                + Add Link
+                + {t('addLink')}
               </button>
               <button onClick={() => setShowSocialSelector(!showSocialSelector)}
                 className="px-4 py-2.5 text-sm rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 transition-all">
-                ⚡ Quick Add Social
+                {t('quickAddSocial')}
               </button>
             </div>
 
@@ -509,13 +521,50 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <StatsCard icon="👀" label="Total Views" value={stats.total_views} color="#a855f7" />
                   <StatsCard icon="🖱" label="Total Clicks" value={stats.total_clicks} color="#3b82f6" />
+                  <StatsCard icon="IP" label="Unique Clickers" value={stats.unique_clickers || 0} color="#14b8a6" />
                   <StatsCard icon="🔗" label="Total Links" value={stats.total_links} color="#22c55e" />
+                  <StatsCard icon="M" label="Mobile Clicks" value={stats.mobile_clicks || 0} color="#ec4899" />
+                  <StatsCard icon="D" label="Desktop Clicks" value={stats.desktop_clicks || 0} color="#f97316" />
                   <StatsCard
                     icon="🌐"
                     label="Profile URL"
                     value={stats.profile_url}
                     color="#f59e0b"
                   />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="glass-card p-6">
+                    <h2 className="font-semibold text-white mb-4">Clicks by Device</h2>
+                    {stats.device_breakdown?.length ? (
+                      <div className="space-y-3">
+                        {stats.device_breakdown.map((item) => (
+                          <div key={item.device_type} className="flex items-center justify-between gap-3">
+                            <span className="text-sm text-gray-300">{deviceLabel(item.device_type)}</span>
+                            <span className="text-sm font-semibold text-white">{item.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">Detailed click logs will appear after the new migration is applied and new clicks arrive.</p>
+                    )}
+                  </div>
+
+                  <div className="glass-card p-6">
+                    <h2 className="font-semibold text-white mb-4">Clicks by Country</h2>
+                    {stats.country_breakdown?.length ? (
+                      <div className="space-y-3">
+                        {stats.country_breakdown.map((item) => (
+                          <div key={item.country} className="flex items-center justify-between gap-3">
+                            <span className="text-sm text-gray-300">{item.country_label}</span>
+                            <span className="text-sm font-semibold text-white">{item.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">No country data yet.</p>
+                    )}
+                  </div>
                 </div>
 
                 {stats.top_links && stats.top_links.length > 0 && (
@@ -534,6 +583,38 @@ export default function Dashboard() {
                           </span>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {stats.recent_clicks && stats.recent_clicks.length > 0 && (
+                  <div className="glass-card overflow-hidden">
+                    <div className="p-4 border-b border-white/[0.08]">
+                      <h2 className="font-semibold text-white">Recent Clicks</h2>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-white/[0.08] text-gray-400 text-xs uppercase tracking-wider bg-white/[0.02]">
+                            <th className="px-4 py-3">Time</th>
+                            <th className="px-4 py-3">Link</th>
+                            <th className="px-4 py-3">IP</th>
+                            <th className="px-4 py-3">Device</th>
+                            <th className="px-4 py-3">Country</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/[0.04]">
+                          {stats.recent_clicks.map((click) => (
+                            <tr key={click.id} className="text-sm text-gray-300">
+                              <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-400">{formatDateTime(click.created_at)}</td>
+                              <td className="px-4 py-3 max-w-[220px] truncate">{click.link_title || 'Deleted link'}</td>
+                              <td className="px-4 py-3 font-mono text-xs">{click.visitor_ip || 'N/A'}</td>
+                              <td className="px-4 py-3">{deviceLabel(click.device_type)}</td>
+                              <td className="px-4 py-3">{click.country_label || 'Unknown'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 )}

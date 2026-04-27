@@ -134,6 +134,7 @@ export default function AdminPanel() {
               <StatsCard icon="🔗" label="Total Links" value={stats.total_links} color="#f59e0b" />
               <StatsCard icon="🌟" label="New Users Today" value={stats.new_users_today} color="#ec4899" />
               <StatsCard icon="🌍" label="Total Logged Visits" value={stats.active_visits} color="#14b8a6" />
+              <StatsCard icon="IP" label="Logged Clicks" value={stats.logged_clicks || 0} color="#f97316" />
             </div>
           </div>
         )}
@@ -260,6 +261,7 @@ export default function AdminPanel() {
                     <tr className="border-b border-white/[0.08] text-gray-400 text-xs uppercase tracking-wider bg-white/[0.02]">
                       <th className="px-6 py-3">Time</th>
                       <th className="px-6 py-3">IP Address</th>
+                      <th className="px-6 py-3">Device</th>
                       <th className="px-6 py-3">Location</th>
                       <th className="px-6 py-3">Profile Visited</th>
                     </tr>
@@ -274,9 +276,12 @@ export default function AdminPanel() {
                           {v.visitor_ip}
                         </td>
                         <td className="px-6 py-3">
+                          {v.device_type || 'desktop'}
+                        </td>
+                        <td className="px-6 py-3">
                           {v.country ? (
                             <span className="flex items-center gap-1.5">
-                              {v.city ? `${v.city}, ` : ''}{v.country}
+                              {v.city ? `${v.city}, ` : ''}{v.country_label || v.country}
                             </span>
                           ) : (
                             <span className="text-gray-500">Unknown</span>
@@ -295,7 +300,7 @@ export default function AdminPanel() {
                     ))}
                     {visits.length === 0 && !loading && (
                       <tr>
-                        <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
+                        <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
                           No visit logs recorded yet.
                         </td>
                       </tr>

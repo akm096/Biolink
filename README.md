@@ -191,6 +191,14 @@ node make-admin.js <username>
 
 Admin paneli uygulama icinde `/admin` rotasindan erisilebilir.
 
+Cloudflare D1 kullanan canli sitede kendinizi admin yapmak icin `worker` klasorunde su komutu calistirin:
+
+```bash
+npx wrangler d1 execute biolink-db --remote --command "UPDATE users SET role = 'admin' WHERE username = '<kullanici_adi>';"
+```
+
+Ardindan siteden cikis yapip tekrar giris yapin; `/admin` paneli gorunur olur.
+
 ## Kullanilabilir Komutlar
 
 ### Client
@@ -276,6 +284,13 @@ cd worker
 npx wrangler secret put JWT_SECRET
 npm run db:migrate
 npm run db:seed
+```
+
+Yeni istatistik detaylari icin mevcut Cloudflare D1 veritabaninda migration'i tekrar calistirin:
+
+```bash
+cd worker
+npm run db:migrate
 ```
 
 Demo seed sonrasi hesap:

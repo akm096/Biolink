@@ -1,6 +1,6 @@
 const USERNAME_REGEX = /^[a-z0-9_.]{3,30}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const URL_REGEX = /^https?:\/\/.+/i;
+const URL_REGEX = /^(https?:\/\/|mailto:).+/i;
 
 function validateUsername(username) {
   if (!username) return 'Username is required';
@@ -24,7 +24,7 @@ function validatePassword(password) {
 
 function validateUrl(url) {
   if (!url) return null; // URLs are optional in many places
-  if (!URL_REGEX.test(url)) return 'URL must start with http:// or https://';
+  if (!URL_REGEX.test(url)) return 'URL must start with http://, https://, or mailto:';
   return null;
 }
 

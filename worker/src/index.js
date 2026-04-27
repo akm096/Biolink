@@ -1,6 +1,6 @@
 const USERNAME_REGEX = /^[a-z0-9_.]{3,30}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const URL_REGEX = /^https?:\/\/.+/i;
+const URL_REGEX = /^(https?:\/\/|mailto:).+/i;
 const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 const TEMPLATES = [
@@ -193,8 +193,18 @@ async function getPublicProfile(request, env, username) {
   if (!profile) return json({ error: 'Profile not found' }, 404, request, env);
 
   await env.DB.prepare('UPDATE profiles SET views = views + 1 WHERE user_id = ?').bind(user.id).run();
-  const clientIp = getClientIp(request);
-  if (clientIp) await env.DB.prepare('INSERT INTO visit_logs (user_id, visitor_ip, country, city) VALUES (?, ?, ?, ?)').bind(user.id, clientIp, '', '').run();
+  const visitor = getVisitorInfo(request);
+  if (visitor.ip) {
+    try {
+      await env.DB.prepare('INSERT INTO visit_logs (user_id, visitor_ip, country, city, device_type, user_agent) VALUES (?, ?, ?, ?, ?, ?)')
+        .bind(user.id, visitor.ip, visitor.country, visitor.city, visitor.deviceType, visitor.userAgent)
+        .run();
+    } catch {
+      await env.DB.prepare('INSERT INTO visit_logs (user_id, visitor_ip, country, city) VALUES (?, ?, ?, ?)')
+        .bind(user.id, visitor.ip, visitor.country, visitor.city)
+        .run();
+    }
+  }
 
   const links = await env.DB.prepare('SELECT id, title, url, type, icon, color, is_visible, is_featured, position, click_count FROM links WHERE user_id = ? AND is_visible = 1 ORDER BY position ASC').bind(user.id).all();
 
@@ -236,13 +246,14 @@ async function createLink(request, env) {
   if (userId instanceof Response) return userId;
   const body = await readJson(request);
   if (!body.title || !body.url) return json({ error: 'Title and URL are required' }, 400, request, env);
-  const urlErr = validateUrl(body.url);
+  const normalizedUrl = normalizeLinkUrl(body.url);
+  const urlErr = validateUrl(normalizedUrl);
   if (urlErr) return json({ error: urlErr }, 400, request, env);
 
   const maxPos = await env.DB.prepare('SELECT MAX(position) as max_pos FROM links WHERE user_id = ?').bind(userId).first();
   const position = (maxPos?.max_pos ?? -1) + 1;
   const result = await env.DB.prepare('INSERT INTO links (user_id, title, url, type, icon, color, is_visible, is_featured, position) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-    .bind(userId, sanitizeString(body.title), body.url, body.type || 'link', body.icon || 'link', body.color || '', body.is_visible !== undefined ? boolInt(body.is_visible) : 1, boolInt(body.is_featured), position)
+    .bind(userId, sanitizeString(body.title), normalizedUrl, body.type || 'link', body.icon || 'link', body.color || '', body.is_visible !== undefined ? boolInt(body.is_visible) : 1, boolInt(body.is_featured), position)
     .run();
   const link = await env.DB.prepare('SELECT * FROM links WHERE id = ?').bind(result.meta.last_row_id).first();
   return json({ link }, 201, request, env);
@@ -255,16 +266,17 @@ async function updateLink(request, env, id) {
   if (!link) return json({ error: 'Link not found' }, 404, request, env);
   const body = await readJson(request);
   if (body.url) {
-    const urlErr = validateUrl(body.url);
+    const urlErr = validateUrl(normalizeLinkUrl(body.url));
     if (urlErr) return json({ error: urlErr }, 400, request, env);
   }
+  const normalizedUrl = body.url !== undefined ? normalizeLinkUrl(body.url) : null;
 
   await env.DB.prepare(`
     UPDATE links SET title = COALESCE(?, title), url = COALESCE(?, url), type = COALESCE(?, type),
       icon = COALESCE(?, icon), color = COALESCE(?, color), is_visible = COALESCE(?, is_visible),
       is_featured = COALESCE(?, is_featured), position = COALESCE(?, position), updated_at = CURRENT_TIMESTAMP
     WHERE id = ? AND user_id = ?
-  `).bind(optText(body, 'title'), opt(body, 'url'), opt(body, 'type'), opt(body, 'icon'), opt(body, 'color'), optBool(body, 'is_visible'), optBool(body, 'is_featured'), opt(body, 'position'), id, userId).run();
+  `).bind(optText(body, 'title'), normalizedUrl, opt(body, 'type'), opt(body, 'icon'), opt(body, 'color'), optBool(body, 'is_visible'), optBool(body, 'is_featured'), opt(body, 'position'), id, userId).run();
 
   const updated = await env.DB.prepare('SELECT * FROM links WHERE id = ?').bind(id).first();
   return json({ link: updated }, 200, request, env);
@@ -289,8 +301,18 @@ async function reorderLinks(request, env) {
 }
 
 async function trackClick(request, env, id) {
-  const result = await env.DB.prepare('UPDATE links SET click_count = click_count + 1 WHERE id = ?').bind(id).run();
-  if (!result.meta.changes) return json({ error: 'Link not found' }, 404, request, env);
+  const link = await env.DB.prepare('SELECT id, user_id FROM links WHERE id = ?').bind(id).first();
+  if (!link) return json({ error: 'Link not found' }, 404, request, env);
+
+  const visitor = getVisitorInfo(request);
+  await env.DB.prepare('UPDATE links SET click_count = click_count + 1 WHERE id = ?').bind(id).run();
+  try {
+    await env.DB.prepare('INSERT INTO click_logs (link_id, user_id, visitor_ip, country, city, device_type, user_agent, referrer) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(link.id, link.user_id, visitor.ip, visitor.country, visitor.city, visitor.deviceType, visitor.userAgent, visitor.referrer)
+      .run();
+  } catch {
+    // The total click counter should keep working even before the detail migration is applied.
+  }
   return json({ success: true }, 200, request, env);
 }
 
@@ -301,7 +323,24 @@ async function getStats(request, env) {
   const linkStats = await env.DB.prepare('SELECT COUNT(*) as total_links, SUM(click_count) as total_clicks FROM links WHERE user_id = ?').bind(userId).first();
   const topLinks = await env.DB.prepare('SELECT title, url, click_count, icon FROM links WHERE user_id = ? ORDER BY click_count DESC LIMIT 5').bind(userId).all();
   const user = await env.DB.prepare('SELECT username FROM users WHERE id = ?').bind(userId).first();
-  return json({ stats: { total_views: profile?.views || 0, total_links: linkStats?.total_links || 0, total_clicks: linkStats?.total_clicks || 0, top_links: topLinks.results, profile_url: `/${user?.username}`, created_at: profile?.created_at, updated_at: profile?.updated_at } }, 200, request, env);
+  const clickDetails = await getClickDetails(env, userId);
+  return json({
+    stats: {
+      total_views: profile?.views || 0,
+      total_links: linkStats?.total_links || 0,
+      total_clicks: linkStats?.total_clicks || 0,
+      unique_clickers: clickDetails.unique_clickers,
+      mobile_clicks: clickDetails.mobile_clicks,
+      desktop_clicks: clickDetails.desktop_clicks,
+      device_breakdown: clickDetails.device_breakdown,
+      country_breakdown: clickDetails.country_breakdown,
+      recent_clicks: clickDetails.recent_clicks,
+      top_links: topLinks.results,
+      profile_url: `/${user?.username}`,
+      created_at: profile?.created_at,
+      updated_at: profile?.updated_at
+    }
+  }, 200, request, env);
 }
 
 async function adminStats(request, env) {
@@ -315,7 +354,12 @@ async function adminStats(request, env) {
     env.DB.prepare("SELECT COUNT(*) as count FROM users WHERE date(created_at) = date('now')"),
     env.DB.prepare('SELECT COUNT(*) as count FROM visit_logs')
   ]);
-  return json({ stats: { total_users: rows[0].results[0].count, total_links: rows[1].results[0].count, total_views: rows[2].results[0].count || 0, total_clicks: rows[3].results[0].count || 0, new_users_today: rows[4].results[0].count, active_visits: rows[5].results[0].count } }, 200, request, env);
+  let loggedClicks = 0;
+  try {
+    const clickRows = await env.DB.prepare('SELECT COUNT(*) as count FROM click_logs').first();
+    loggedClicks = clickRows?.count || 0;
+  } catch {}
+  return json({ stats: { total_users: rows[0].results[0].count, total_links: rows[1].results[0].count, total_views: rows[2].results[0].count || 0, total_clicks: rows[3].results[0].count || 0, new_users_today: rows[4].results[0].count, active_visits: rows[5].results[0].count, logged_clicks: loggedClicks } }, 200, request, env);
 }
 
 async function adminUsers(request, env, searchParams) {
@@ -390,7 +434,58 @@ async function adminVisits(request, env) {
   const admin = await requireAdmin(request, env);
   if (admin instanceof Response) return admin;
   const visits = await env.DB.prepare('SELECT v.*, u.username as visited_profile FROM visit_logs v LEFT JOIN users u ON u.id = v.user_id ORDER BY v.created_at DESC LIMIT 100').all();
-  return json({ visits: visits.results }, 200, request, env);
+  return json({ visits: visits.results.map((row) => ({ ...row, country_label: countryName(row.country) })) }, 200, request, env);
+}
+
+async function getClickDetails(env, userId) {
+  try {
+    const rows = await env.DB.batch([
+      env.DB.prepare('SELECT COUNT(DISTINCT visitor_ip) as count FROM click_logs WHERE user_id = ? AND visitor_ip != ?').bind(userId, ''),
+      env.DB.prepare('SELECT device_type, COUNT(*) as count FROM click_logs WHERE user_id = ? GROUP BY device_type ORDER BY count DESC').bind(userId),
+      env.DB.prepare('SELECT country, COUNT(*) as count FROM click_logs WHERE user_id = ? GROUP BY country ORDER BY count DESC LIMIT 10').bind(userId),
+      env.DB.prepare(`
+        SELECT c.id, c.visitor_ip, c.country, c.city, c.device_type, c.created_at,
+          l.title as link_title, l.url as link_url
+        FROM click_logs c
+        LEFT JOIN links l ON l.id = c.link_id
+        WHERE c.user_id = ?
+        ORDER BY c.created_at DESC
+        LIMIT 25
+      `).bind(userId)
+    ]);
+
+    const deviceBreakdown = rows[1].results.map((row) => ({
+      device_type: normalizeDevice(row.device_type),
+      count: row.count
+    }));
+    const countryBreakdown = rows[2].results.map((row) => ({
+      country: row.country || 'Unknown',
+      country_label: countryName(row.country),
+      count: row.count
+    }));
+
+    return {
+      unique_clickers: rows[0].results[0]?.count || 0,
+      mobile_clicks: deviceBreakdown.find((row) => row.device_type === 'mobile')?.count || 0,
+      desktop_clicks: deviceBreakdown.find((row) => row.device_type === 'desktop')?.count || 0,
+      device_breakdown: deviceBreakdown,
+      country_breakdown: countryBreakdown,
+      recent_clicks: rows[3].results.map((row) => ({
+        ...row,
+        country_label: countryName(row.country),
+        device_type: normalizeDevice(row.device_type)
+      }))
+    };
+  } catch {
+    return {
+      unique_clickers: 0,
+      mobile_clicks: 0,
+      desktop_clicks: 0,
+      device_breakdown: [],
+      country_breakdown: [],
+      recent_clicks: []
+    };
+  }
 }
 
 async function profileByUser(env, userId) {
@@ -490,8 +585,13 @@ function validatePassword(password) {
 
 function validateUrl(url) {
   if (!url) return null;
-  if (!URL_REGEX.test(url)) return 'URL must start with http:// or https://';
+  if (!URL_REGEX.test(url)) return 'URL must start with http://, https://, or mailto:';
   return null;
+}
+
+function normalizeLinkUrl(value) {
+  const trimmed = String(value || '').trim();
+  return EMAIL_REGEX.test(trimmed) ? `mailto:${trimmed}` : trimmed;
 }
 
 function sanitizeString(value) {
@@ -525,6 +625,38 @@ async function readJson(request) {
 
 function getClientIp(request) {
   return (request.headers.get('CF-Connecting-IP') || request.headers.get('x-forwarded-for') || '').split(',')[0].trim();
+}
+
+function getVisitorInfo(request) {
+  const userAgent = request.headers.get('User-Agent') || '';
+  return {
+    ip: getClientIp(request),
+    country: (request.cf?.country || request.headers.get('CF-IPCountry') || '').toUpperCase(),
+    city: request.cf?.city || '',
+    deviceType: detectDevice(userAgent),
+    userAgent: userAgent.slice(0, 500),
+    referrer: (request.headers.get('Referer') || '').slice(0, 500)
+  };
+}
+
+function detectDevice(userAgent) {
+  const ua = String(userAgent || '').toLowerCase();
+  if (/ipad|tablet|kindle|silk|playbook/.test(ua)) return 'tablet';
+  if (/mobi|android|iphone|ipod|blackberry|phone/.test(ua)) return 'mobile';
+  return 'desktop';
+}
+
+function normalizeDevice(value) {
+  return ['mobile', 'desktop', 'tablet'].includes(value) ? value : 'desktop';
+}
+
+function countryName(code) {
+  if (!code) return 'Unknown';
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code;
+  } catch {
+    return code;
+  }
 }
 
 function decodeSegment(path, index) {

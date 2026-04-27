@@ -1,9 +1,11 @@
 import {
+  siAnilist,
   siDiscord,
   siFacebook,
   siGithub,
   siGmail,
   siInstagram,
+  siMyanimelist,
   siSpotify,
   siSteam,
   siTelegram,
@@ -32,6 +34,9 @@ const ICON_ALIASES = {
   spotify: 'spotify',
   twitch: 'twitch',
   facebook: 'facebook',
+  myanimelist: 'myanimelist',
+  mal: 'myanimelist',
+  anilist: 'anilist',
   email: 'email',
   mail: 'email',
   gmail: 'email',
@@ -54,6 +59,10 @@ const DOMAIN_HINTS = [
   ['spotify.', 'spotify'],
   ['twitch.', 'twitch'],
   ['facebook.', 'facebook'],
+  ['myanimelist.', 'myanimelist'],
+  ['myanimelist.net', 'myanimelist'],
+  ['anilist.', 'anilist'],
+  ['anilist.co', 'anilist'],
   ['mailto:', 'email'],
 ];
 
@@ -69,6 +78,8 @@ const BRAND_ICONS = {
   spotify: siSpotify,
   twitch: siTwitch,
   facebook: siFacebook,
+  myanimelist: siMyanimelist,
+  anilist: siAnilist,
   email: siGmail,
 };
 

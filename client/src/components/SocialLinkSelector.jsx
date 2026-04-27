@@ -1,6 +1,7 @@
 import { SOCIAL_PRESETS } from '../utils/templates';
 import SocialIcon from './SocialIcon';
 import { useState } from 'react';
+import { useLanguage } from '../hooks/useLanguage';
 
 function cleanHandle(value) {
   return value.trim().replace(/^@+/, '').replace(/^\/+/, '');
@@ -25,6 +26,7 @@ function buildPresetLink(preset, mode, value) {
 }
 
 export default function SocialLinkSelector({ onSelect }) {
+  const { t } = useLanguage();
   const [selected, setSelected] = useState(null);
   const [mode, setMode] = useState('username');
   const [value, setValue] = useState('');
@@ -54,14 +56,14 @@ export default function SocialLinkSelector({ onSelect }) {
   };
 
   const inputLabel = selected?.type === 'discord'
-    ? 'Discord Nick'
+    ? t('discordNick')
     : selected?.type === 'email'
-      ? 'Email'
-      : 'Username';
+      ? t('email')
+      : t('username');
 
   return (
     <div className="glass-card p-5">
-      <h3 className="font-semibold text-white mb-3">Quick Add Social Links</h3>
+      <h3 className="font-semibold text-white mb-3">{t('quickAddSocialLinks')}</h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
         {SOCIAL_PRESETS.map(preset => (
           <button
@@ -85,7 +87,7 @@ export default function SocialLinkSelector({ onSelect }) {
           <div className="flex rounded-xl bg-white/[0.04] border border-white/[0.08] p-1">
             {[
               { id: 'username', label: inputLabel },
-              { id: 'link', label: 'Full Link' },
+              { id: 'link', label: t('fullLink') },
             ].map(option => (
               <button
                 key={option.id}
@@ -114,7 +116,7 @@ export default function SocialLinkSelector({ onSelect }) {
               autoFocus
             />
             <button type="submit" className="glow-btn text-sm !px-5 !py-2.5 whitespace-nowrap">
-              Add
+              {t('add')}
             </button>
           </div>
         </form>

@@ -1,4 +1,13 @@
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const DEFAULT_PROD_API_URL = 'https://biolink-api.qsp7mdjbcy.workers.dev/api';
+const envApiUrl = import.meta.env.VITE_API_URL?.trim();
+const isLocalUrl = (value) => /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?\/api\/?$/i.test(value || '');
+const isRelativeUrl = (value) => String(value || '').startsWith('/');
+
+const API_URL = import.meta.env.DEV
+  ? (envApiUrl || '/api')
+  : (envApiUrl && !isLocalUrl(envApiUrl) && !isRelativeUrl(envApiUrl)
+      ? envApiUrl
+      : DEFAULT_PROD_API_URL);
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('bio_token');

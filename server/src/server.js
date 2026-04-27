@@ -2,7 +2,7 @@ require('dotenv').config();
 const app = require('./app');
 const { getDb, closeDb } = require('./db/database');
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8055;
 
 // Initialize database on startup
 getDb();

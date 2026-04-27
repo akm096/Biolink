@@ -116,7 +116,7 @@ Backend sunucusunu baslatin:
 npm run dev
 ```
 
-Backend varsayilan olarak `http://localhost:3001` adresinde calisir.
+Backend varsayilan olarak `http://localhost:8055` adresinde calisir.
 
 Yeni bir terminalde frontend bagimliliklarini kurun:
 
@@ -146,7 +146,7 @@ Frontend varsayilan olarak `http://localhost:5173` adresinde calisir.
 `server/.env.example`:
 
 ```env
-PORT=3001
+PORT=8055
 JWT_SECRET=change-this-to-a-random-secret-key-in-production
 NODE_ENV=development
 CLIENT_URL=http://localhost:5173
@@ -164,7 +164,7 @@ CLIENT_URL=http://localhost:5173
 `client/.env.example`:
 
 ```env
-VITE_API_URL=http://localhost:5173/api
+VITE_API_URL=/api
 ```
 
 Gelistirme sirasinda Vite proxy kullanildigi icin API cagrilari `/api` yolundan backend'e yonlendirilir.

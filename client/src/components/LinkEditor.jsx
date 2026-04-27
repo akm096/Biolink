@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import SocialIcon, { getSocialIconType } from './SocialIcon';
 import { SOCIAL_PRESETS } from '../utils/templates';
+import { useLanguage } from '../hooks/useLanguage';
 
 export default function LinkEditor({ link, onSave, onDelete, onCancel }) {
+  const { t } = useLanguage();
   const [form, setForm] = useState({
     title: link?.title || '',
     url: link?.url || '',
@@ -24,7 +26,7 @@ export default function LinkEditor({ link, onSave, onDelete, onCancel }) {
   };
 
   const iconOptions = [
-    { type: 'link', title: 'Link' },
+    { type: 'link', title: t('normalLink') },
     ...SOCIAL_PRESETS.map(({ type, title }) => ({ type, title })),
   ];
 
@@ -32,18 +34,18 @@ export default function LinkEditor({ link, onSave, onDelete, onCancel }) {
     <form onSubmit={handleSubmit} className="glass-card p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-white">
-          {link?.id ? 'Edit Link' : 'Add New Link'}
+          {link?.id ? t('editLink') : t('addNewLink')}
         </h3>
         {onCancel && (
           <button type="button" onClick={onCancel} className="text-gray-400 hover:text-white text-sm">
-            ✕ Cancel
+            ✕ {t('cancel')}
           </button>
         )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">Title</label>
+          <label className="text-xs text-gray-400 mb-1 block">{t('title')}</label>
           <input
             className="input-dark"
             placeholder="My Link"
@@ -53,7 +55,7 @@ export default function LinkEditor({ link, onSave, onDelete, onCancel }) {
           />
         </div>
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">URL</label>
+          <label className="text-xs text-gray-400 mb-1 block">{t('url')}</label>
           <input
             className="input-dark"
             placeholder="https://example.com"
@@ -66,23 +68,23 @@ export default function LinkEditor({ link, onSave, onDelete, onCancel }) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">Type</label>
+          <label className="text-xs text-gray-400 mb-1 block">{t('type')}</label>
           <select
             className="input-dark"
             value={form.type}
             onChange={e => setForm({ ...form, type: e.target.value })}
           >
-            <option value="link">Normal Link</option>
-            <option value="social">Social Link</option>
-            <option value="music">Music Link</option>
-            <option value="video">Video Link</option>
-            <option value="contact">Contact Link</option>
-            <option value="custom">Custom Link</option>
+            <option value="link">{t('normalLink')}</option>
+            <option value="social">{t('socialLink')}</option>
+            <option value="music">{t('musicLink')}</option>
+            <option value="video">{t('videoLink')}</option>
+            <option value="contact">{t('contactLink')}</option>
+            <option value="custom">{t('customLink')}</option>
           </select>
         </div>
 
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">Icon</label>
+          <label className="text-xs text-gray-400 mb-1 block">{t('icon')}</label>
           <div className="flex gap-1 flex-wrap">
             {iconOptions.slice(0, 12).map(option => (
               <button
@@ -101,7 +103,7 @@ export default function LinkEditor({ link, onSave, onDelete, onCancel }) {
         </div>
 
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">Color</label>
+          <label className="text-xs text-gray-400 mb-1 block">{t('color')}</label>
           <div className="flex items-center gap-2">
             <input
               type="color"
@@ -126,7 +128,7 @@ export default function LinkEditor({ link, onSave, onDelete, onCancel }) {
             onChange={e => setForm({ ...form, is_visible: e.target.checked })}
             className="w-4 h-4 rounded accent-purple-500"
           />
-          <span className="text-sm text-gray-300">Visible</span>
+          <span className="text-sm text-gray-300">{t('visible')}</span>
         </label>
         <label className="flex items-center gap-2 cursor-pointer">
           <input
@@ -135,13 +137,13 @@ export default function LinkEditor({ link, onSave, onDelete, onCancel }) {
             onChange={e => setForm({ ...form, is_featured: e.target.checked })}
             className="w-4 h-4 rounded accent-purple-500"
           />
-          <span className="text-sm text-gray-300">Featured</span>
+          <span className="text-sm text-gray-300">{t('featured')}</span>
         </label>
       </div>
 
       <div className="flex items-center gap-3">
         <button type="submit" className="glow-btn text-sm">
-          {link?.id ? 'Save Changes' : 'Add Link'}
+          {link?.id ? t('saveChanges') : t('addLink')}
         </button>
         {link?.id && onDelete && (
           <button
@@ -149,7 +151,7 @@ export default function LinkEditor({ link, onSave, onDelete, onCancel }) {
             onClick={() => onDelete(link.id)}
             className="px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all"
           >
-            Delete
+            {t('delete')}
           </button>
         )}
       </div>

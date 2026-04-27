@@ -1,11 +1,13 @@
 import { useState } from 'react';
+import SocialIcon, { getSocialIconType } from './SocialIcon';
+import { SOCIAL_PRESETS } from '../utils/templates';
 
 export default function LinkEditor({ link, onSave, onDelete, onCancel }) {
   const [form, setForm] = useState({
     title: link?.title || '',
     url: link?.url || '',
     type: link?.type || 'link',
-    icon: link?.icon || '🔗',
+    icon: getSocialIconType(link) || 'link',
     color: link?.color || '#a855f7',
     is_visible: link?.is_visible ?? true,
     is_featured: link?.is_featured ?? false,
@@ -21,7 +23,10 @@ export default function LinkEditor({ link, onSave, onDelete, onCancel }) {
     });
   };
 
-  const emojiOptions = ['🔗', '📸', '🎬', '🐦', '💬', '💻', '🎮', '🎵', '✈️', '🎭', '📘', '💼', '🌐', '📧', '⭐', '🎨', '🟣', '🌍', '📱', '🛒'];
+  const iconOptions = [
+    { type: 'link', title: 'Link' },
+    ...SOCIAL_PRESETS.map(({ type, title }) => ({ type, title })),
+  ];
 
   return (
     <form onSubmit={handleSubmit} className="glass-card p-5 space-y-4">
@@ -79,16 +84,17 @@ export default function LinkEditor({ link, onSave, onDelete, onCancel }) {
         <div>
           <label className="text-xs text-gray-400 mb-1 block">Icon</label>
           <div className="flex gap-1 flex-wrap">
-            {emojiOptions.slice(0, 10).map(emoji => (
+            {iconOptions.slice(0, 12).map(option => (
               <button
-                key={emoji}
+                key={option.type}
                 type="button"
                 className={`w-8 h-8 rounded-lg text-sm flex items-center justify-center transition-all ${
-                  form.icon === emoji ? 'bg-purple-500/30 ring-1 ring-purple-400' : 'bg-white/5 hover:bg-white/10'
+                  getSocialIconType(form.icon) === option.type ? 'bg-purple-500/30 ring-1 ring-purple-400' : 'bg-white/5 hover:bg-white/10'
                 }`}
-                onClick={() => setForm({ ...form, icon: emoji })}
+                onClick={() => setForm({ ...form, icon: option.type, type: option.type === 'link' ? form.type : 'social' })}
+                title={option.title}
               >
-                {emoji}
+                <SocialIcon type={option.type} size={18} variant="brand" />
               </button>
             ))}
           </div>

@@ -268,6 +268,7 @@ export default function PublicProfile() {
         <EnterOverlay
           displayName={profile.display_name}
           username={profile.username}
+          avatarUrl={profile.avatar_url}
           accentColor={profile.accent_color || theme.accent}
           onEnter={handleEnter}
         />

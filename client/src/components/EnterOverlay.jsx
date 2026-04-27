@@ -1,7 +1,8 @@
 import { useState } from 'react';
 
-export default function EnterOverlay({ displayName, username, accentColor, onEnter }) {
+export default function EnterOverlay({ displayName, username, avatarUrl, accentColor, onEnter }) {
   const [exiting, setExiting] = useState(false);
+  const fallbackAvatar = `https://api.dicebear.com/9.x/glass/svg?seed=${username}&backgroundColor=a855f7`;
 
   const handleClick = () => {
     setExiting(true);
@@ -16,16 +17,18 @@ export default function EnterOverlay({ displayName, username, accentColor, onEnt
       onClick={handleClick}
     >
       <div className="text-center animate-fade-in">
-        <div
-          className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center text-3xl"
+        <img
+          src={avatarUrl || fallbackAvatar}
+          alt={displayName || username}
+          className="w-20 h-20 rounded-full mx-auto mb-6 object-cover"
           style={{
-            background: `${accentColor || '#a855f7'}22`,
             border: `2px solid ${accentColor || '#a855f7'}44`,
             boxShadow: `0 0 40px ${accentColor || '#a855f7'}33`
           }}
-        >
-          👤
-        </div>
+          onError={(e) => {
+            e.currentTarget.src = fallbackAvatar;
+          }}
+        />
         <h2 className="text-2xl font-bold text-white mb-2">
           {displayName || username}
         </h2>

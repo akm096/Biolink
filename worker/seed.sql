@@ -36,9 +36,9 @@ INSERT OR IGNORE INTO badges (user_id, badge_type) VALUES
   (1, 'creator');
 
 INSERT OR IGNORE INTO links (id, user_id, title, url, type, icon, color, is_visible, is_featured, position, click_count) VALUES
-  (1, 1, 'Instagram', 'https://instagram.com', 'social', 'instagram', '#E1306C', 1, 0, 0, 15),
-  (2, 1, 'YouTube', 'https://youtube.com', 'social', 'youtube', '#FF0000', 1, 1, 1, 28),
-  (3, 1, 'Twitter / X', 'https://x.com', 'social', 'x', '#1DA1F2', 1, 0, 2, 12),
-  (4, 1, 'Discord Server', 'https://discord.gg', 'social', 'discord', '#5865F2', 1, 0, 3, 8),
-  (5, 1, 'GitHub', 'https://github.com', 'social', 'github', '#333333', 1, 0, 4, 19),
-  (6, 1, 'My Portfolio', 'https://example.com', 'link', 'link', '#a855f7', 1, 1, 5, 33);
+  (1, 1, 'Instagram', 'https://instagram.com', 'social', 'instagram', '#ffffff', 1, 0, 0, 15),
+  (2, 1, 'YouTube', 'https://youtube.com', 'social', 'youtube', '#ffffff', 1, 1, 1, 28),
+  (3, 1, 'Twitter / X', 'https://x.com', 'social', 'twitter', '#ffffff', 1, 0, 2, 12),
+  (4, 1, 'Discord Server', 'https://discord.gg', 'social', 'discord', '#ffffff', 1, 0, 3, 8),
+  (5, 1, 'GitHub', 'https://github.com', 'social', 'github', '#ffffff', 1, 0, 4, 19),
+  (6, 1, 'My Portfolio', 'https://example.com', 'link', 'website', '#ffffff', 1, 1, 5, 33);

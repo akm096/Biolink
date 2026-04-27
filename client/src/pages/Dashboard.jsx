@@ -7,6 +7,7 @@ import ThemePreview from '../components/ThemePreview';
 import StatsCard from '../components/StatsCard';
 import LinkEditor from '../components/LinkEditor';
 import SocialLinkSelector from '../components/SocialLinkSelector';
+import SocialIcon from '../components/SocialIcon';
 
 const TABS = [
   { id: 'profile', label: '👤 Profile', },
@@ -155,20 +156,16 @@ export default function Dashboard() {
   function handleSocialSelect(preset) {
     setShowSocialSelector(false);
     setEditingLink(null);
-    setShowAddLink(true);
-    // Pre-fill a link editor with social data (handled via state trick)
-    setTimeout(() => {
-      setShowAddLink(false);
-      handleAddLink({
-        title: preset.title,
-        url: preset.urlPrefix,
-        type: 'social',
-        icon: preset.icon,
-        color: preset.color,
-        is_visible: 1,
-        is_featured: 0,
-      });
-    }, 0);
+    setShowAddLink(false);
+    handleAddLink({
+      title: preset.title,
+      url: preset.url || preset.urlPrefix,
+      type: 'social',
+      icon: preset.icon || preset.type,
+      color: preset.color,
+      is_visible: 1,
+      is_featured: 0,
+    });
   }
 
   function copyProfileUrl() {
@@ -422,7 +419,7 @@ export default function Dashboard() {
                       !link.is_visible ? 'opacity-50' : ''
                     }`}
                   >
-                    <span className="text-xl flex-shrink-0">{link.icon || '🔗'}</span>
+                    <SocialIcon source={link} size={24} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-white text-sm truncate">{link.title}</p>
@@ -527,7 +524,7 @@ export default function Dashboard() {
                     <div className="space-y-3">
                       {stats.top_links.map((link, i) => (
                         <div key={i} className="flex items-center gap-3">
-                          <span className="text-lg w-6 text-center">{link.icon || '🔗'}</span>
+                          <SocialIcon source={link} size={22} className="w-6" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-white truncate">{link.title}</p>
                             <p className="text-xs text-gray-500 truncate">{link.url}</p>

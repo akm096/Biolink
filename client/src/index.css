@@ -117,6 +117,30 @@ body {
   .badge {
     @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium;
   }
+
+  .social-logo {
+    @apply inline-flex items-center justify-center flex-shrink-0;
+    line-height: 1;
+  }
+
+  .social-logo-glow,
+  .social-logo-soft {
+    color: #fff;
+  }
+
+  .social-logo-glow {
+    filter:
+      drop-shadow(0 0 5px rgba(255, 255, 255, 0.85))
+      drop-shadow(0 0 14px rgba(255, 255, 255, 0.35));
+  }
+
+  .social-logo-soft {
+    opacity: 0.9;
+  }
+
+  .social-logo-brand {
+    filter: drop-shadow(0 0 10px color-mix(in srgb, currentColor, transparent 55%));
+  }
 }
 
 /* ===== Particle Animation (CSS only) ===== */

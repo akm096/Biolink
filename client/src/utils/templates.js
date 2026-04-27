@@ -138,20 +138,20 @@ export function getTemplateStyles(templateId) {
 }
 
 export const SOCIAL_PRESETS = [
-  { type: 'instagram', title: 'Instagram', icon: '📸', color: '#E1306C', urlPrefix: 'https://instagram.com/' },
-  { type: 'tiktok', title: 'TikTok', icon: '🎭', color: '#000000', urlPrefix: 'https://tiktok.com/@' },
-  { type: 'youtube', title: 'YouTube', icon: '🎬', color: '#FF0000', urlPrefix: 'https://youtube.com/@' },
-  { type: 'twitter', title: 'X / Twitter', icon: '🐦', color: '#1DA1F2', urlPrefix: 'https://x.com/' },
-  { type: 'telegram', title: 'Telegram', icon: '✈️', color: '#0088cc', urlPrefix: 'https://t.me/' },
-  { type: 'discord', title: 'Discord', icon: '💬', color: '#5865F2', urlPrefix: 'https://discord.gg/' },
-  { type: 'github', title: 'GitHub', icon: '💻', color: '#333333', urlPrefix: 'https://github.com/' },
-  { type: 'steam', title: 'Steam', icon: '🎮', color: '#1b2838', urlPrefix: 'https://steamcommunity.com/id/' },
-  { type: 'spotify', title: 'Spotify', icon: '🎵', color: '#1DB954', urlPrefix: 'https://open.spotify.com/user/' },
-  { type: 'twitch', title: 'Twitch', icon: '🟣', color: '#9146FF', urlPrefix: 'https://twitch.tv/' },
-  { type: 'facebook', title: 'Facebook', icon: '📘', color: '#1877F2', urlPrefix: 'https://facebook.com/' },
-  { type: 'linkedin', title: 'LinkedIn', icon: '💼', color: '#0A66C2', urlPrefix: 'https://linkedin.com/in/' },
-  { type: 'website', title: 'Website', icon: '🌐', color: '#6366f1', urlPrefix: 'https://' },
-  { type: 'email', title: 'Email', icon: '📧', color: '#ea580c', urlPrefix: 'mailto:' },
+  { type: 'discord', title: 'Discord', icon: 'discord', color: '#ffffff', urlPrefix: 'https://discord.gg/' },
+  { type: 'instagram', title: 'Instagram', icon: 'instagram', color: '#ffffff', urlPrefix: 'https://instagram.com/' },
+  { type: 'telegram', title: 'Telegram', icon: 'telegram', color: '#ffffff', urlPrefix: 'https://t.me/' },
+  { type: 'github', title: 'GitHub', icon: 'github', color: '#ffffff', urlPrefix: 'https://github.com/' },
+  { type: 'steam', title: 'Steam', icon: 'steam', color: '#ffffff', urlPrefix: 'https://steamcommunity.com/id/' },
+  { type: 'website', title: 'Website', icon: 'website', color: '#ffffff', urlPrefix: 'https://' },
+  { type: 'tiktok', title: 'TikTok', icon: 'tiktok', color: '#ffffff', urlPrefix: 'https://tiktok.com/@' },
+  { type: 'youtube', title: 'YouTube', icon: 'youtube', color: '#ffffff', urlPrefix: 'https://youtube.com/@' },
+  { type: 'twitter', title: 'X / Twitter', icon: 'twitter', color: '#ffffff', urlPrefix: 'https://x.com/' },
+  { type: 'spotify', title: 'Spotify', icon: 'spotify', color: '#ffffff', urlPrefix: 'https://open.spotify.com/user/' },
+  { type: 'twitch', title: 'Twitch', icon: 'twitch', color: '#ffffff', urlPrefix: 'https://twitch.tv/' },
+  { type: 'facebook', title: 'Facebook', icon: 'facebook', color: '#ffffff', urlPrefix: 'https://facebook.com/' },
+  { type: 'linkedin', title: 'LinkedIn', icon: 'linkedin', color: '#ffffff', urlPrefix: 'https://linkedin.com/in/' },
+  { type: 'email', title: 'Email', icon: 'email', color: '#ffffff', urlPrefix: 'mailto:' },
 ];
 
 export const BADGE_DEFS = {

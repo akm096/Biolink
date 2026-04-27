@@ -47,7 +47,7 @@ router.post('/', authMiddleware, (req, res) => {
       sanitizeString(title),
       url,
       type || 'link',
-      icon || '🔗',
+      icon || 'link',
       color || '',
       is_visible !== undefined ? (is_visible ? 1 : 0) : 1,
       is_featured ? 1 : 0,

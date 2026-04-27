@@ -1,5 +1,6 @@
 import api from '../utils/api';
 import { getTemplateStyles } from '../utils/templates';
+import SocialIcon from './SocialIcon';
 
 export default function LinkButton({ link, templateId, onClick }) {
   const theme = getTemplateStyles(templateId);
@@ -36,7 +37,7 @@ export default function LinkButton({ link, templateId, onClick }) {
       target="_blank"
       rel="noopener noreferrer"
     >
-      <span className="text-xl flex-shrink-0">{link.icon || '🔗'}</span>
+      <SocialIcon source={link} size={24} />
       <div className="flex-1 min-w-0">
         <span className="font-medium text-sm block truncate">{link.title}</span>
       </div>

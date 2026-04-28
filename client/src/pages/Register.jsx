@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../hooks/useLanguage';
+import { PANEL_ROUTES } from '../utils/routes';
 
 export default function Register() {
   const [form, setForm] = useState({ username: '', email: '', password: '' });
@@ -26,7 +27,7 @@ export default function Register() {
     try {
       await register(form);
       toast.success(t('accountCreated'));
-      navigate('/dashboard');
+      navigate(PANEL_ROUTES.dashboard);
     } catch (err) {
       toast.error(err.message || t('registrationFailed'));
     } finally {
@@ -92,7 +93,7 @@ export default function Register() {
 
           <p className="text-center text-sm text-gray-400">
             {t('alreadyAccount')}{' '}
-            <Link to="/login" className="text-purple-400 hover:text-purple-300 transition-colors">
+            <Link to={PANEL_ROUTES.login} className="text-purple-400 hover:text-purple-300 transition-colors">
               {t('signIn')}
             </Link>
           </p>

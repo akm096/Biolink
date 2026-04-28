@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../components/Toast';
 import { useLanguage } from '../hooks/useLanguage';
+import { PANEL_ROUTES } from '../utils/routes';
 
 export default function Login() {
   const [form, setForm] = useState({ login: '', password: '' });
@@ -22,7 +23,7 @@ export default function Login() {
     try {
       await login(form);
       toast.success(t('welcomeToast'));
-      navigate('/dashboard');
+      navigate(PANEL_ROUTES.dashboard);
     } catch (err) {
       toast.error(err.message || t('loginFailed'));
     } finally {
@@ -73,7 +74,7 @@ export default function Login() {
 
           <p className="text-center text-sm text-gray-400">
             {t('noAccount')}{' '}
-            <Link to="/register" className="text-purple-400 hover:text-purple-300 transition-colors">
+            <Link to={PANEL_ROUTES.register} className="text-purple-400 hover:text-purple-300 transition-colors">
               {t('createOne')}
             </Link>
           </p>

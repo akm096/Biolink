@@ -149,6 +149,9 @@ router.put('/me', authMiddleware, (req, res) => {
 router.get('/check/:username', authMiddleware, (req, res) => {
   try {
     const db = getDb();
+    const usernameErr = validateUsername(req.params.username);
+    if (usernameErr) return res.json({ available: false, error: usernameErr });
+
     const existing = db.prepare(
       'SELECT id FROM users WHERE username = ? AND id != ?'
     ).get(req.params.username.toLowerCase(), req.userId);

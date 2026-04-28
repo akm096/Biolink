@@ -2,6 +2,27 @@ const USERNAME_REGEX = /^[a-z0-9_.]{3,30}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_REGEX = /^(https?:\/\/|mailto:).+/i;
 const TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
+const RESERVED_USERNAMES = [
+  'admin',
+  'administrator',
+  'api',
+  'app',
+  'auth',
+  'dashboard',
+  'login',
+  'logout',
+  'me',
+  'panel',
+  'profile',
+  'register',
+  'root',
+  'settings',
+  'static',
+  'support',
+  'system',
+  'user',
+  'users',
+];
 
 const TEMPLATES = [
   template('minimal-dark', 'Minimal Dark', 'Clean and minimal dark theme', '#0a0a0a', '#ffffff'),
@@ -187,6 +208,9 @@ async function updateMyProfile(request, env) {
 async function checkUsername(request, env, username) {
   const userId = await requireUser(request, env);
   if (userId instanceof Response) return userId;
+  const usernameErr = validateUsername(username);
+  if (usernameErr) return json({ available: false, error: usernameErr }, 200, request, env);
+
   const existing = await env.DB.prepare('SELECT id FROM users WHERE username = ? AND id != ?').bind(String(username || '').toLowerCase(), userId).first();
   return json({ available: !existing }, 200, request, env);
 }
@@ -644,8 +668,10 @@ async function hmac(value, secret) {
 }
 
 function validateUsername(username) {
-  if (!username) return 'Username is required';
-  if (!USERNAME_REGEX.test(username)) return 'Username must be 3-30 characters: lowercase letters, numbers, underscores, dots only';
+  const normalized = String(username || '').toLowerCase();
+  if (!normalized) return 'Username is required';
+  if (!USERNAME_REGEX.test(normalized)) return 'Username must be 3-30 characters: lowercase letters, numbers, underscores, dots only';
+  if (RESERVED_USERNAMES.includes(normalized)) return 'This username is reserved and cannot be used';
   return null;
 }
 

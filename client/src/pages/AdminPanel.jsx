@@ -6,6 +6,7 @@ import api from '../utils/api';
 import StatsCard from '../components/StatsCard';
 import { useLanguage } from '../hooks/useLanguage';
 import { BADGE_DEFS } from '../utils/templates';
+import { PANEL_ROUTES } from '../utils/routes';
 
 export default function AdminPanel() {
   const { user } = useAuth();
@@ -162,7 +163,7 @@ export default function AdminPanel() {
     );
   }
 
-  if (user?.role !== 'admin') return <Navigate to="/dashboard" replace />;
+  if (user?.role !== 'admin') return <Navigate to={PANEL_ROUTES.dashboard} replace />;
 
   return (
     <div className="min-h-screen pt-20 pb-12 px-4">

@@ -8,9 +8,10 @@ import Dashboard from './pages/Dashboard';
 import PublicProfile from './pages/PublicProfile';
 import NotFound from './pages/NotFound';
 import AdminPanel from './pages/AdminPanel';
+import { PANEL_ROUTES } from './utils/routes';
 
 // Pages where navbar should be shown
-const NAVBAR_PAGES = ['/', '/login', '/register', '/dashboard', '/admin'];
+const NAVBAR_PAGES = ['/', '/panel'];
 
 export default function App() {
   const location = useLocation();
@@ -25,14 +26,14 @@ export default function App() {
       {showNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={
+        <Route path={PANEL_ROUTES.login} element={<Login />} />
+        <Route path={PANEL_ROUTES.register} element={<Register />} />
+        <Route path={PANEL_ROUTES.dashboard} element={
           <ProtectedRoute>
             <Dashboard />
           </ProtectedRoute>
         } />
-        <Route path="/admin" element={
+        <Route path={PANEL_ROUTES.admin} element={
           <ProtectedRoute>
             <AdminPanel />
           </ProtectedRoute>

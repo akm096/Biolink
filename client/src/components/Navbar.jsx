@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../hooks/useLanguage';
+import { PANEL_ROUTES } from '../utils/routes';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -37,14 +38,14 @@ export default function Navbar() {
             <>
               {user.role === 'admin' && (
                 <Link
-                  to="/admin"
+                  to={PANEL_ROUTES.admin}
                   className="px-3 sm:px-4 py-2 text-sm font-semibold text-purple-400 hover:text-purple-300 transition-colors"
                 >
                   {t('admin')}
                 </Link>
               )}
               <Link
-                to="/dashboard"
+                to={PANEL_ROUTES.dashboard}
                 className="px-3 sm:px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors"
               >
                 {t('dashboard')}
@@ -65,13 +66,13 @@ export default function Navbar() {
           ) : (
             <>
               <Link
-                to="/login"
+                to={PANEL_ROUTES.login}
                 className="px-3 sm:px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors"
               >
                 {t('login')}
               </Link>
               <Link
-                to="/register"
+                to={PANEL_ROUTES.register}
                 className="glow-btn text-sm !px-4 sm:!px-5 !py-2"
               >
                 {t('getStarted')}

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../hooks/useLanguage';
+import { PANEL_ROUTES } from '../utils/routes';
 
 export default function Landing() {
   const { t } = useLanguage();
@@ -36,7 +37,7 @@ export default function Landing() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-            <Link to="/register" className="glow-btn text-base px-8 py-4">
+            <Link to={PANEL_ROUTES.register} className="glow-btn text-base px-8 py-4">
               {t('createYourProfile')}
             </Link>
             <Link
@@ -101,7 +102,7 @@ export default function Landing() {
             <p className="text-gray-400 mb-8">
               {t('joinNow')}
             </p>
-            <Link to="/register" className="glow-btn text-base px-10 py-4 inline-block">
+            <Link to={PANEL_ROUTES.register} className="glow-btn text-base px-10 py-4 inline-block">
               {t('getStartedFree')}
             </Link>
           </div>
@@ -119,8 +120,8 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-6 text-sm text-gray-500">
             <Link to="/demo" className="hover:text-gray-300 transition-colors">Demo</Link>
-            <Link to="/register" className="hover:text-gray-300 transition-colors">{t('signUp')}</Link>
-            <Link to="/login" className="hover:text-gray-300 transition-colors">{t('login')}</Link>
+            <Link to={PANEL_ROUTES.register} className="hover:text-gray-300 transition-colors">{t('signUp')}</Link>
+            <Link to={PANEL_ROUTES.login} className="hover:text-gray-300 transition-colors">{t('login')}</Link>
           </div>
         </div>
       </footer>

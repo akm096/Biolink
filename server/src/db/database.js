@@ -80,7 +80,7 @@ function initializeTables() {
       title TEXT NOT NULL,
       url TEXT NOT NULL,
       type TEXT DEFAULT 'link',
-      icon TEXT DEFAULT '🔗',
+      icon TEXT DEFAULT 'link',
       color TEXT DEFAULT '',
       is_visible INTEGER DEFAULT 1,
       is_featured INTEGER DEFAULT 0,

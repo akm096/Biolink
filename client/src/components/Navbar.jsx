@@ -1,8 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useLanguage } from '../hooks/useLanguage';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -20,49 +22,59 @@ export default function Navbar() {
           <span className="font-bold text-lg text-white">Bio<span className="text-purple-400">Platform</span></span>
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <select
+            className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-gray-300 outline-none"
+            value={language}
+            onChange={e => setLanguage(e.target.value)}
+            aria-label={t('language')}
+          >
+            <option value="en">EN</option>
+            <option value="tr">TR</option>
+          </select>
+
           {user ? (
             <>
               {user.role === 'admin' && (
                 <Link
                   to="/admin"
-                  className="px-4 py-2 text-sm font-semibold text-purple-400 hover:text-purple-300 transition-colors"
+                  className="px-3 sm:px-4 py-2 text-sm font-semibold text-purple-400 hover:text-purple-300 transition-colors"
                 >
-                  ⚙️ Admin
+                  {t('admin')}
                 </Link>
               )}
               <Link
                 to="/dashboard"
-                className="px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors"
+                className="px-3 sm:px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors"
               >
-                Dashboard
+                {t('dashboard')}
               </Link>
               <Link
                 to={`/${user.username}`}
-                className="px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors"
+                className="hidden sm:inline px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors"
               >
-                My Profile
+                {t('myProfile')}
               </Link>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 text-sm text-gray-400 hover:text-red-400 transition-colors"
+                className="px-3 sm:px-4 py-2 text-sm text-gray-400 hover:text-red-400 transition-colors"
               >
-                Logout
+                {t('logout')}
               </button>
             </>
           ) : (
             <>
               <Link
                 to="/login"
-                className="px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors"
+                className="px-3 sm:px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors"
               >
-                Login
+                {t('login')}
               </Link>
               <Link
                 to="/register"
-                className="glow-btn text-sm !px-5 !py-2"
+                className="glow-btn text-sm !px-4 sm:!px-5 !py-2"
               >
-                Get Started
+                {t('getStarted')}
               </Link>
             </>
           )}

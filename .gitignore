@@ -4,11 +4,13 @@ node_modules/
 # Environment files
 .env
 .env.*
+.dev.vars
 !.env.example
 
 # Build output
 dist/
 build/
+.wrangler/
 
 # Logs
 *.log

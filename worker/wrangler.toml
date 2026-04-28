@@ -1,0 +1,12 @@
+name = "biolink-api"
+main = "src/index.js"
+compatibility_date = "2026-04-26"
+
+[vars]
+CLIENT_URL = "https://biolink-claude.pages.dev"
+JWT_SECRET = "change-this-with-wrangler-secret-before-production"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "biolink-db"
+database_id = "7ee59f28-5386-423a-bda1-ce9ec31ab089"

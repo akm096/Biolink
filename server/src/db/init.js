@@ -62,16 +62,16 @@ async function seed() {
   `);
 
   const demoLinks = [
-    [userId, 'Instagram', 'https://instagram.com', 'social', '📸', '#E1306C', 1, 0, 0, 15],
-    [userId, 'YouTube', 'https://youtube.com', 'social', '🎬', '#FF0000', 1, 1, 1, 28],
-    [userId, 'Twitter / X', 'https://x.com', 'social', '🐦', '#1DA1F2', 1, 0, 2, 12],
-    [userId, 'Discord Server', 'https://discord.gg', 'social', '💬', '#5865F2', 1, 0, 3, 8],
-    [userId, 'GitHub', 'https://github.com', 'social', '💻', '#333333', 1, 0, 4, 19],
-    [userId, 'My Portfolio', 'https://example.com', 'link', '🌐', '#a855f7', 1, 1, 5, 33],
-    [userId, 'Spotify Playlist', 'https://spotify.com', 'music', '🎵', '#1DB954', 1, 0, 6, 7],
-    [userId, 'Telegram', 'https://t.me', 'social', '✈️', '#0088cc', 1, 0, 7, 5],
-    [userId, 'TikTok', 'https://tiktok.com', 'social', '🎭', '#000000', 1, 0, 8, 10],
-    [userId, 'Steam', 'https://store.steampowered.com', 'social', '🎮', '#1b2838', 1, 0, 9, 3],
+    [userId, 'Instagram', 'https://instagram.com', 'social', 'instagram', '#ffffff', 1, 0, 0, 15],
+    [userId, 'YouTube', 'https://youtube.com', 'social', 'youtube', '#ffffff', 1, 1, 1, 28],
+    [userId, 'Twitter / X', 'https://x.com', 'social', 'twitter', '#ffffff', 1, 0, 2, 12],
+    [userId, 'Discord Server', 'https://discord.gg', 'social', 'discord', '#ffffff', 1, 0, 3, 8],
+    [userId, 'GitHub', 'https://github.com', 'social', 'github', '#ffffff', 1, 0, 4, 19],
+    [userId, 'My Portfolio', 'https://example.com', 'link', 'website', '#ffffff', 1, 1, 5, 33],
+    [userId, 'Spotify Playlist', 'https://spotify.com', 'music', 'spotify', '#ffffff', 1, 0, 6, 7],
+    [userId, 'Telegram', 'https://t.me', 'social', 'telegram', '#ffffff', 1, 0, 7, 5],
+    [userId, 'TikTok', 'https://tiktok.com', 'social', 'tiktok', '#ffffff', 1, 0, 8, 10],
+    [userId, 'Steam', 'https://store.steampowered.com', 'social', 'steam', '#ffffff', 1, 0, 9, 3],
   ];
 
   const insertMany = db.transaction((links) => {

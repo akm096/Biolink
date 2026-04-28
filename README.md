@@ -2,10 +2,11 @@
 
 Modern bio-link ve profil paylasim uygulamasi. Kullanicilar tek bir herkese acik profil sayfasinda sosyal baglantilarini, ozel linklerini, tema ayarlarini, arka plan gorselini veya videosunu, muzik bilgisini ve rozetlerini yonetebilir.
 
-Proje iki parcadan olusur:
+Proje Cloudflare icin iki ana parcadan olusur:
 
 - `client/`: React + Vite arayuzu
-- `server/`: Express + SQLite API sunucusu
+- `worker/`: Cloudflare Workers + D1 API sunucusu
+- `server/`: Yerel/klasik Node.js Express + SQLite API sunucusu
 
 ## Ozellikler
 
@@ -29,9 +30,13 @@ Proje iki parcadan olusur:
 | Arayuz | React 18, Vite |
 | Stil | Tailwind CSS |
 | Rota | React Router |
-| API | Node.js, Express |
-| Veritabani | SQLite, better-sqlite3 |
-| Kimlik dogrulama | JWT, bcryptjs |
+| Cloudflare API | Cloudflare Workers |
+| Cloudflare veritabani | D1 |
+| Yerel API | Node.js, Express |
+| Yerel veritabani | SQLite, better-sqlite3 |
+| Kimlik dogrulama | JWT / Web Crypto |
+
+Cloudflare deploy hedefinde API katmani `worker/` altindaki Cloudflare Worker ile calisir ve veritabani olarak D1 kullanir.
 
 ## Klasor Yapisi
 
@@ -68,6 +73,14 @@ biolink claude/
 |   |-- .env.example
 |   |-- make-admin.js
 |   `-- package.json
+|-- worker/
+|   |-- migrations/
+|   |   `-- 0001_schema.sql
+|   |-- src/
+|   |   `-- index.js
+|   |-- seed.sql
+|   |-- wrangler.toml
+|   `-- package.json
 `-- README.md
 ```
 
@@ -103,7 +116,7 @@ Backend sunucusunu baslatin:
 npm run dev
 ```
 
-Backend varsayilan olarak `http://localhost:3001` adresinde calisir.
+Backend varsayilan olarak `http://localhost:8055` adresinde calisir.
 
 Yeni bir terminalde frontend bagimliliklarini kurun:
 
@@ -133,7 +146,7 @@ Frontend varsayilan olarak `http://localhost:5173` adresinde calisir.
 `server/.env.example`:
 
 ```env
-PORT=3001
+PORT=8055
 JWT_SECRET=change-this-to-a-random-secret-key-in-production
 NODE_ENV=development
 CLIENT_URL=http://localhost:5173
@@ -151,7 +164,7 @@ CLIENT_URL=http://localhost:5173
 `client/.env.example`:
 
 ```env
-VITE_API_URL=http://localhost:5173/api
+VITE_API_URL=/api
 ```
 
 Gelistirme sirasinda Vite proxy kullanildigi icin API cagrilari `/api` yolundan backend'e yonlendirilir.
@@ -177,6 +190,14 @@ node make-admin.js <username>
 ```
 
 Admin paneli uygulama icinde `/admin` rotasindan erisilebilir.
+
+Cloudflare D1 kullanan canli sitede kendinizi admin yapmak icin `worker` klasorunde su komutu calistirin:
+
+```bash
+npx wrangler d1 execute biolink-db --remote --command "UPDATE users SET role = 'admin' WHERE username = '<kullanici_adi>';"
+```
+
+Ardindan siteden cikis yapip tekrar giris yapin; `/admin` paneli gorunur olur.
 
 ## Kullanilabilir Komutlar
 
@@ -241,3 +262,97 @@ Admin paneli uygulama icinde `/admin` rotasindan erisilebilir.
 - Frontend icin `client` klasorunde `npm run build` calistirilir.
 - Backend Render, Railway, VPS veya benzeri Node.js destekleyen ortamlarda calistirilabilir.
 
+## Cloudflare Pages + Workers + D1
+
+Bu yol, projeyi Cloudflare'in ucretsiz katmaninda calistirmak icindir. Frontend Pages'e, backend Worker'a, veritabani D1'a gider.
+
+### 1. D1 veritabani olusturun
+
+```bash
+cd worker
+npm install
+npx wrangler login
+npx wrangler d1 create biolink-db
+```
+
+Komutun verdigi `database_id` degerini `worker/wrangler.toml` icindeki `database_id` alanina yazin.
+
+### 2. Worker secret ve D1 tablolarini hazirlayin
+
+```bash
+cd worker
+npx wrangler secret put JWT_SECRET
+npm run db:migrate
+npm run db:seed
+```
+
+Yeni istatistik detaylari icin mevcut Cloudflare D1 veritabaninda migration'i tekrar calistirin:
+
+```bash
+cd worker
+npm run db:migrate
+```
+
+Demo seed sonrasi hesap:
+
+| Alan | Deger |
+| --- | --- |
+| Kullanici adi | `demo` |
+| E-posta | `demo@example.com` |
+| Sifre | `demo123` |
+
+### 3. Backend Worker deploy edin
+
+```bash
+cd worker
+npm run deploy
+```
+
+Deploy sonrasi Worker URL-ni qeyd edin, meselen:
+
+```text
+https://biolink-api.<hesabiniz>.workers.dev
+```
+
+Production ucun `CLIENT_URL` deyerini Pages domain'inizle guncelleyin:
+
+```bash
+npx wrangler secret put CLIENT_URL
+```
+
+`CLIENT_URL` secret deyilse `worker/wrangler.toml` icinde canli Pages domain'i ile deyise bilersiniz.
+
+### 4. Frontend Pages deploy edin
+
+Cloudflare Pages ayarlari:
+
+| Ayar | Deger |
+| --- | --- |
+| Root directory | `client` |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Environment variable | `VITE_API_URL=https://biolink-api.<hesabiniz>.workers.dev/api` |
+
+Pages SPA rotalari ucun `client/public/_redirects` elave olunub; `/dashboard`, `/admin`, `/:username` kimi React rotalari refresh zamani acilacaq.
+
+### 5. Yerel Cloudflare testi
+
+Bir terminalde Worker:
+
+```bash
+cd worker
+copy .dev.vars.example .dev.vars
+npm run db:migrate:local
+npm run db:seed:local
+npm run dev
+```
+
+Diger terminalde frontend:
+
+```bash
+cd client
+copy .env.example .env
+npm run dev
+```
+
+Bu halda frontend `http://localhost:8787/api` Worker API-sine baglanir.

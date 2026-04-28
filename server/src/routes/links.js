@@ -5,6 +5,13 @@ const { validateUrl, sanitizeString } = require('../utils/validators');
 
 const router = express.Router();
 
+const EMAIL_LINK_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function normalizeLinkUrl(value) {
+  const trimmed = String(value || '').trim();
+  return EMAIL_LINK_REGEX.test(trimmed) ? `mailto:${trimmed}` : trimmed;
+}
+
 // GET /api/links - get user's links
 router.get('/', authMiddleware, (req, res) => {
   try {
@@ -28,7 +35,8 @@ router.post('/', authMiddleware, (req, res) => {
       return res.status(400).json({ error: 'Title and URL are required' });
     }
 
-    const urlErr = validateUrl(url);
+    const normalizedUrl = normalizeLinkUrl(url);
+    const urlErr = validateUrl(normalizedUrl);
     if (urlErr) return res.status(400).json({ error: urlErr });
 
     const db = getDb();
@@ -45,9 +53,9 @@ router.post('/', authMiddleware, (req, res) => {
     `).run(
       req.userId,
       sanitizeString(title),
-      url,
+      normalizedUrl,
       type || 'link',
-      icon || '🔗',
+      icon || 'link',
       color || '',
       is_visible !== undefined ? (is_visible ? 1 : 0) : 1,
       is_featured ? 1 : 0,
@@ -75,9 +83,12 @@ router.put('/:id', authMiddleware, (req, res) => {
     const { title, url, type, icon, color, is_visible, is_featured, position } = req.body;
 
     if (url) {
-      const urlErr = validateUrl(url);
+      const normalizedUrl = normalizeLinkUrl(url);
+      const urlErr = validateUrl(normalizedUrl);
       if (urlErr) return res.status(400).json({ error: urlErr });
     }
+
+    const normalizedUrl = url !== undefined ? normalizeLinkUrl(url) : null;
 
     db.prepare(`
       UPDATE links SET
@@ -93,7 +104,7 @@ router.put('/:id', authMiddleware, (req, res) => {
       WHERE id = ? AND user_id = ?
     `).run(
       title !== undefined ? sanitizeString(title) : null,
-      url !== undefined ? url : null,
+      normalizedUrl,
       type !== undefined ? type : null,
       icon !== undefined ? icon : null,
       color !== undefined ? color : null,

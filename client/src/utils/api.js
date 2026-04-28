@@ -64,6 +64,9 @@ const api = {
   updateAdminUser: (id, body) => request(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deleteAdminUser: (id) => request(`/admin/users/${id}`, { method: 'DELETE' }),
   getAdminVisits: () => request('/admin/visits'),
+  resetAdminUserPassword: (id, body) => request(`/admin/users/${id}/password`, { method: 'PUT', body: JSON.stringify(body) }),
+  getAdminSettings: () => request('/admin/settings'),
+  updateAdminSettings: (body) => request('/admin/settings', { method: 'PUT', body: JSON.stringify(body) }),
 };
 
 export default api;

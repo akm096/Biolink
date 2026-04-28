@@ -109,6 +109,12 @@ function initializeTables() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS platform_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
     CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON profiles(user_id);
     CREATE INDEX IF NOT EXISTS idx_links_user_id ON links(user_id);
@@ -122,6 +128,12 @@ function migrateTables() {
   addColumnIfMissing('users', 'role', "TEXT DEFAULT 'user'");
   addColumnIfMissing('users', 'last_login_ip', "TEXT DEFAULT ''");
   addColumnIfMissing('users', 'last_login_at', 'DATETIME');
+
+  // Seed early_user_deadline if missing (default: end of 2026)
+  const existing = db.prepare("SELECT key FROM platform_settings WHERE key = 'early_user_deadline'").get();
+  if (!existing) {
+    db.prepare("INSERT INTO platform_settings (key, value) VALUES ('early_user_deadline', '2026-12-31T23:59:59')").run();
+  }
 }
 
 function closeDb() {

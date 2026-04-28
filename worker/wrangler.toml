@@ -5,6 +5,8 @@ compatibility_date = "2026-04-26"
 [vars]
 CLIENT_URL = "https://biolink-claude.pages.dev"
 JWT_SECRET = "change-this-with-wrangler-secret-before-production"
+# Custom domain(ləri vergüllə ayır, məs: "https://biolink.az,https://www.biolink.az"
+ALLOWED_ORIGINS = "https://biolink.indevs.in,https://biolink.sensei.web.tr"
 
 [[d1_databases]]
 binding = "DB"

@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const { getDb } = require('../db/database');
 const { adminMiddleware } = require('../middleware/auth');
 const { validateUsername, validateEmail, sanitizeString } = require('../utils/validators');
@@ -149,7 +150,7 @@ router.put('/users/:id', (req, res) => {
       );
     }
 
-    // 3. Update Badges
+    // 3. Update Badges — Admin can set ALL badges including verified and early_user
     if (badges && Array.isArray(badges)) {
       db.prepare('DELETE FROM badges WHERE user_id = ?').run(userId);
       const insertBadge = db.prepare('INSERT INTO badges (user_id, badge_type) VALUES (?, ?)');
@@ -162,6 +163,30 @@ router.put('/users/:id', (req, res) => {
   } catch (err) {
     console.error('Admin update user error:', err);
     res.status(500).json({ error: 'Server error updating user' });
+  }
+});
+
+// PUT /api/admin/users/:id/password - Reset user password
+router.put('/users/:id/password', async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = req.params.id;
+    const { new_password } = req.body;
+
+    if (!new_password || new_password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    const existingUser = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
+    if (!existingUser) return res.status(404).json({ error: 'User not found' });
+
+    const hash = await bcrypt.hash(new_password, 10);
+    db.prepare('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(hash, userId);
+
+    res.json({ success: true, message: 'Password reset successfully' });
+  } catch (err) {
+    console.error('Admin reset password error:', err);
+    res.status(500).json({ error: 'Server error resetting password' });
   }
 });
 
@@ -205,6 +230,51 @@ router.get('/visits', (req, res) => {
   } catch (err) {
     console.error('Admin get visits error:', err);
     res.status(500).json({ error: 'Server error fetching visits' });
+  }
+});
+
+// GET /api/admin/settings - Get platform settings
+router.get('/settings', (req, res) => {
+  try {
+    const db = getDb();
+    const rows = db.prepare('SELECT key, value, updated_at FROM platform_settings').all();
+    const settings = {};
+    for (const row of rows) {
+      settings[row.key] = row.value;
+    }
+    res.json({ settings });
+  } catch (err) {
+    console.error('Admin get settings error:', err);
+    res.status(500).json({ error: 'Server error fetching settings' });
+  }
+});
+
+// PUT /api/admin/settings - Update a platform setting
+router.put('/settings', (req, res) => {
+  try {
+    const db = getDb();
+    const { key, value } = req.body;
+
+    if (!key || value === undefined) {
+      return res.status(400).json({ error: 'Key and value are required' });
+    }
+
+    // Whitelist allowed keys
+    const ALLOWED_KEYS = ['early_user_deadline'];
+    if (!ALLOWED_KEYS.includes(key)) {
+      return res.status(400).json({ error: `Setting '${key}' is not allowed` });
+    }
+
+    db.prepare(`
+      INSERT INTO platform_settings (key, value, updated_at) 
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+    `).run(key, value);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Admin update settings error:', err);
+    res.status(500).json({ error: 'Server error updating settings' });
   }
 });
 

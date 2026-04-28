@@ -55,8 +55,11 @@ export default {
       if (request.method === 'GET' && path === '/api/admin/users') return adminUsers(request, env, url.searchParams);
       if (request.method === 'GET' && /^\/api\/admin\/users\/\d+$/.test(path)) return adminUser(request, env, Number(path.split('/')[4]));
       if (request.method === 'PUT' && /^\/api\/admin\/users\/\d+$/.test(path)) return adminUpdateUser(request, env, Number(path.split('/')[4]));
+      if (request.method === 'PUT' && /^\/api\/admin\/users\/\d+\/password$/.test(path)) return adminResetPassword(request, env, Number(path.split('/')[4]));
       if (request.method === 'DELETE' && /^\/api\/admin\/users\/\d+$/.test(path)) return adminDeleteUser(request, env, Number(path.split('/')[4]));
       if (request.method === 'GET' && path === '/api/admin/visits') return adminVisits(request, env);
+      if (request.method === 'GET' && path === '/api/admin/settings') return adminSettings(request, env);
+      if (request.method === 'PUT' && path === '/api/admin/settings') return adminUpdateSettings(request, env);
 
       return json({ error: 'API endpoint not found' }, 404, request, env);
     } catch (error) {
@@ -85,10 +88,13 @@ async function register(request, env) {
   const result = await env.DB.prepare('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)').bind(username, email, passwordHash).run();
   const userId = result.meta.last_row_id;
 
-  await env.DB.batch([
-    env.DB.prepare('INSERT INTO profiles (user_id, display_name) VALUES (?, ?)').bind(userId, username),
-    env.DB.prepare('INSERT INTO badges (user_id, badge_type) VALUES (?, ?)').bind(userId, 'early_user')
-  ]);
+  const inserts = [
+    env.DB.prepare('INSERT INTO profiles (user_id, display_name) VALUES (?, ?)').bind(userId, username)
+  ];
+  if (await shouldGrantEarlyUser(env)) {
+    inserts.push(env.DB.prepare('INSERT INTO badges (user_id, badge_type) VALUES (?, ?)').bind(userId, 'early_user'));
+  }
+  await env.DB.batch(inserts);
 
   const token = await generateToken(userId, env);
   return json({ token, user: { id: userId, username, email } }, 201, request, env);
@@ -172,7 +178,7 @@ async function updateMyProfile(request, env) {
     optBool(body, 'show_view_count'), optBool(body, 'enable_effects'), userId
   ).run();
 
-  if (Array.isArray(body.badges)) await replaceBadges(env, userId, body.badges);
+  if (Array.isArray(body.badges)) await replaceUserBadges(env, userId, body.badges);
 
   const profile = await profileByUser(env, userId);
   return json({ profile: { ...profile, badges: await badgesForUser(env, userId) } }, 200, request, env);
@@ -415,6 +421,21 @@ async function adminUpdateUser(request, env, userId) {
   return json({ success: true }, 200, request, env);
 }
 
+async function adminResetPassword(request, env, userId) {
+  const admin = await requireAdmin(request, env);
+  if (admin instanceof Response) return admin;
+  const body = await readJson(request);
+  const passwordErr = validatePassword(body.new_password);
+  if (passwordErr) return json({ error: passwordErr }, 400, request, env);
+
+  const existing = await env.DB.prepare('SELECT id FROM users WHERE id = ?').bind(userId).first();
+  if (!existing) return json({ error: 'User not found' }, 404, request, env);
+
+  const passwordHash = await hashPassword(body.new_password);
+  await env.DB.prepare('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(passwordHash, userId).run();
+  return json({ success: true, message: 'Password reset successfully' }, 200, request, env);
+}
+
 async function adminDeleteUser(request, env, userId) {
   const admin = await requireAdmin(request, env);
   if (admin instanceof Response) return admin;
@@ -435,6 +456,35 @@ async function adminVisits(request, env) {
   if (admin instanceof Response) return admin;
   const visits = await env.DB.prepare('SELECT v.*, u.username as visited_profile FROM visit_logs v LEFT JOIN users u ON u.id = v.user_id ORDER BY v.created_at DESC LIMIT 100').all();
   return json({ visits: visits.results.map((row) => ({ ...row, country_label: countryName(row.country) })) }, 200, request, env);
+}
+
+async function adminSettings(request, env) {
+  const admin = await requireAdmin(request, env);
+  if (admin instanceof Response) return admin;
+  await ensurePlatformSettings(env);
+  const rows = await env.DB.prepare('SELECT key, value, updated_at FROM platform_settings').all();
+  const settings = {};
+  for (const row of rows.results) settings[row.key] = row.value;
+  return json({ settings }, 200, request, env);
+}
+
+async function adminUpdateSettings(request, env) {
+  const admin = await requireAdmin(request, env);
+  if (admin instanceof Response) return admin;
+  const body = await readJson(request);
+  const { key, value } = body;
+  const allowedKeys = new Set(['early_user_deadline']);
+
+  if (!key || value === undefined) return json({ error: 'Key and value are required' }, 400, request, env);
+  if (!allowedKeys.has(key)) return json({ error: `Setting '${key}' is not allowed` }, 400, request, env);
+
+  await ensurePlatformSettings(env);
+  await env.DB.prepare(`
+    INSERT INTO platform_settings (key, value, updated_at)
+    VALUES (?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+  `).bind(key, String(value)).run();
+  return json({ success: true }, 200, request, env);
 }
 
 async function getClickDetails(env, userId) {
@@ -497,13 +547,41 @@ async function badgesForUser(env, userId) {
   return rows.results.map((row) => row.badge_type);
 }
 
+async function replaceUserBadges(env, userId, badges) {
+  const systemBadges = new Set(['verified', 'early_user']);
+  const existing = await env.DB.prepare('SELECT badge_type FROM badges WHERE user_id = ?').bind(userId).all();
+  const preserved = existing.results.map((row) => row.badge_type).filter((badge) => systemBadges.has(badge));
+  await replaceBadges(env, userId, [...preserved, ...badges]);
+}
+
 async function replaceBadges(env, userId, badges) {
   const allowed = new Set(['verified', 'early_user', 'creator', 'developer', 'music', 'gamer']);
-  const validBadges = badges.filter((badge) => allowed.has(badge));
+  const validBadges = [...new Set(badges.filter((badge) => allowed.has(badge)))];
   await env.DB.prepare('DELETE FROM badges WHERE user_id = ?').bind(userId).run();
   if (validBadges.length) {
     await env.DB.batch(validBadges.map((badge) => env.DB.prepare('INSERT INTO badges (user_id, badge_type) VALUES (?, ?)').bind(userId, badge)));
   }
+}
+
+async function shouldGrantEarlyUser(env) {
+  await ensurePlatformSettings(env);
+  const setting = await env.DB.prepare("SELECT value FROM platform_settings WHERE key = 'early_user_deadline'").first();
+  const deadline = setting?.value ? new Date(setting.value) : new Date('2026-12-31T23:59:59');
+  return !Number.isNaN(deadline.getTime()) && Date.now() < deadline.getTime();
+}
+
+async function ensurePlatformSettings(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS platform_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+  await env.DB.prepare(`
+    INSERT OR IGNORE INTO platform_settings (key, value)
+    VALUES ('early_user_deadline', '2026-12-31T23:59:59')
+  `).run();
 }
 
 async function requireAdmin(request, env) {
@@ -683,7 +761,25 @@ function template(id, name, description, bg, accent) {
 function corsHeaders(request, env) {
   const origin = request.headers.get('Origin') || '';
   const configured = env.CLIENT_URL || '';
-  const allowOrigin = configured === '*' || !origin || origin === configured || origin.endsWith('.pages.dev') ? (origin || configured || '*') : configured;
+
+  // Build allowed origins list:
+  // 1. Any *.pages.dev subdomain (Cloudflare Pages preview URLs)
+  // 2. The CLIENT_URL configured in wrangler.toml / env
+  // 3. Any extra origins from ALLOWED_ORIGINS env var (comma-separated)
+  const extraOrigins = (env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  const isAllowed =
+    !origin ||
+    configured === '*' ||
+    origin === configured ||
+    origin.endsWith('.pages.dev') ||
+    extraOrigins.includes(origin);
+
+  const allowOrigin = isAllowed ? (origin || configured || '*') : configured;
+
   return {
     'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',

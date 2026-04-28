@@ -3,13 +3,14 @@ const app = require('./app');
 const { getDb, closeDb } = require('./db/database');
 
 const PORT = process.env.PORT || 8055;
+const HOST = process.env.HOST;
 
 // Initialize database on startup
 getDb();
-console.log('✓ Database connected');
+console.log('Database connected');
 
-const server = app.listen(PORT, () => {
-  console.log(`✓ BioPlatform API running on http://localhost:${PORT}`);
+const server = app.listen(PORT, HOST, () => {
+  console.log(`BioPlatform API running on http://${HOST || 'localhost'}:${PORT}`);
   console.log(`  Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 

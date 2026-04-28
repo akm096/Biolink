@@ -43,10 +43,14 @@ router.post('/register', async (req, res) => {
       'INSERT INTO profiles (user_id, display_name) VALUES (?, ?)'
     ).run(userId, username);
 
-    // Add early_user badge
-    db.prepare(
-      'INSERT INTO badges (user_id, badge_type) VALUES (?, ?)'
-    ).run(userId, 'early_user');
+    // Add early_user badge only if before the admin-set deadline
+    const deadlineSetting = db.prepare("SELECT value FROM platform_settings WHERE key = 'early_user_deadline'").get();
+    const earlyUserDeadline = deadlineSetting ? new Date(deadlineSetting.value) : new Date('2099-12-31');
+    if (new Date() < earlyUserDeadline) {
+      db.prepare(
+        'INSERT INTO badges (user_id, badge_type) VALUES (?, ?)'
+      ).run(userId, 'early_user');
+    }
 
     const token = generateToken(userId);
 

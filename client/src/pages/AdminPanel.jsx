@@ -5,6 +5,7 @@ import { useToast } from '../components/Toast';
 import api from '../utils/api';
 import StatsCard from '../components/StatsCard';
 import { useLanguage } from '../hooks/useLanguage';
+import { BADGE_DEFS } from '../utils/templates';
 
 export default function AdminPanel() {
   const { user } = useAuth();
@@ -15,6 +16,7 @@ export default function AdminPanel() {
     { id: 'overview', label: `📊 ${t('overview')}` },
     { id: 'users',    label: `👥 ${t('users')}` },
     { id: 'visits',   label: `🌍 ${t('visitors')}` },
+    { id: 'settings', label: `⚙️ ${t('settings')}` },
   ];
 
   const [tab, setTab] = useState('overview');
@@ -24,7 +26,17 @@ export default function AdminPanel() {
   const [visits, setVisits] = useState([]);
   const [search, setSearch] = useState('');
   const [editingUser, setEditingUser] = useState(null);
+  const [editBadges, setEditBadges] = useState([]);
   const [savingUser, setSavingUser] = useState(false);
+
+  // Password reset state
+  const [resetPassword, setResetPassword] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
+
+  // Settings state
+  const [platformSettings, setPlatformSettings] = useState({});
+  const [earlyUserDeadline, setEarlyUserDeadline] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
     if (user?.role === 'admin') loadData(tab);
@@ -49,6 +61,19 @@ export default function AdminPanel() {
       } else if (currentTab === 'visits') {
         const res = await api.getAdminVisits();
         setVisits(res.visits);
+      } else if (currentTab === 'settings') {
+        const res = await api.getAdminSettings();
+        setPlatformSettings(res.settings);
+        if (res.settings.early_user_deadline) {
+          // Convert to datetime-local format
+          const d = new Date(res.settings.early_user_deadline);
+          const local = d.getFullYear() + '-' +
+            String(d.getMonth() + 1).padStart(2, '0') + '-' +
+            String(d.getDate()).padStart(2, '0') + 'T' +
+            String(d.getHours()).padStart(2, '0') + ':' +
+            String(d.getMinutes()).padStart(2, '0');
+          setEarlyUserDeadline(local);
+        }
       }
     } catch (err) {
       toast.error(err.message || t('failedLoadAdmin'));
@@ -57,10 +82,27 @@ export default function AdminPanel() {
     }
   }
 
+  async function handleOpenEditUser(u) {
+    // Fetch full user details including badges
+    try {
+      const res = await api.getAdminUser(u.id);
+      setEditingUser({ ...u, ...res.user, bio: res.profile?.bio || '' });
+      setEditBadges(res.badges || []);
+      setResetPassword('');
+    } catch {
+      setEditingUser({ ...u });
+      setEditBadges([]);
+      setResetPassword('');
+    }
+  }
+
   async function handleSaveUser() {
     setSavingUser(true);
     try {
-      await api.updateAdminUser(editingUser.id, editingUser);
+      await api.updateAdminUser(editingUser.id, {
+        ...editingUser,
+        badges: editBadges
+      });
       toast.success(t('userUpdated'));
       setEditingUser(null);
       loadData('users');
@@ -68,6 +110,23 @@ export default function AdminPanel() {
       toast.error(err.message || t('failedUpdateUser'));
     } finally {
       setSavingUser(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!resetPassword || resetPassword.length < 6) {
+      toast.error(t('passwordMin'));
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      await api.resetAdminUserPassword(editingUser.id, { new_password: resetPassword });
+      toast.success(t('passwordResetSuccess'));
+      setResetPassword('');
+    } catch (err) {
+      toast.error(err.message || t('failedResetPassword'));
+    } finally {
+      setResettingPassword(false);
     }
   }
 
@@ -80,6 +139,27 @@ export default function AdminPanel() {
     } catch (err) {
       toast.error(err.message || t('failedDeleteUser'));
     }
+  }
+
+  async function handleSaveSettings() {
+    setSavingSettings(true);
+    try {
+      await api.updateAdminSettings({
+        key: 'early_user_deadline',
+        value: new Date(earlyUserDeadline).toISOString()
+      });
+      toast.success(t('settingsSaved'));
+    } catch (err) {
+      toast.error(err.message || t('failedSaveSettings'));
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
+  function toggleEditBadge(badge) {
+    setEditBadges(prev =>
+      prev.includes(badge) ? prev.filter(b => b !== badge) : [...prev, badge]
+    );
   }
 
   if (user?.role !== 'admin') return <Navigate to="/dashboard" replace />;
@@ -192,7 +272,7 @@ export default function AdminPanel() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex gap-2">
-                            <button onClick={() => setEditingUser({ ...u })}
+                            <button onClick={() => handleOpenEditUser(u)}
                               className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-all text-xs border border-blue-500/20">
                               {t('edit')}
                             </button>
@@ -277,6 +357,48 @@ export default function AdminPanel() {
             </div>
           </div>
         )}
+
+        {/* Settings Tab */}
+        {tab === 'settings' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="glass-card p-6 space-y-6">
+              <h2 className="font-semibold text-white text-lg">⚙️ {t('platformSettings')}</h2>
+
+              {/* Early User Deadline */}
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm text-gray-300 font-medium mb-1 block">⭐ {t('earlyUserDeadline')}</label>
+                  <p className="text-xs text-gray-500 mb-3">{t('earlyUserDeadlineDesc')}</p>
+                </div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3">
+                  <div className="flex-1 w-full">
+                    <input
+                      type="datetime-local"
+                      className="input-dark py-2 w-full"
+                      value={earlyUserDeadline}
+                      onChange={e => setEarlyUserDeadline(e.target.value)}
+                    />
+                  </div>
+                  <button
+                    onClick={handleSaveSettings}
+                    disabled={savingSettings || !earlyUserDeadline}
+                    className="glow-btn !px-6 !py-2 text-sm disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {savingSettings ? t('saving') : `💾 ${t('saveChanges')}`}
+                  </button>
+                </div>
+                {earlyUserDeadline && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <span className="text-amber-400 text-sm">⭐</span>
+                    <span className="text-xs text-amber-300">
+                      {t('earlyUserActiveUntil')}: <strong>{new Date(earlyUserDeadline).toLocaleString()}</strong>
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Edit User Modal */}
@@ -333,6 +455,44 @@ export default function AdminPanel() {
                     <span className="text-sm text-blue-400 font-medium">{t('verifiedAccount')}</span>
                   </label>
                 </div>
+              </div>
+
+              {/* Badge Management */}
+              <div className="border-t border-white/10 pt-4">
+                <label className="text-xs text-gray-400 mb-2 block">{t('badgeManagement')}</label>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(BADGE_DEFS).map(([key, def]) => (
+                    <button key={key} type="button" onClick={() => toggleEditBadge(key)}
+                      className={`badge transition-all ${editBadges.includes(key) ? 'ring-1' : 'opacity-50 hover:opacity-80'}`}
+                      style={{ background: `${def.color}20`, color: def.color, border: `1px solid ${def.color}${editBadges.includes(key) ? '60' : '20'}` }}>
+                      <span>{def.icon}</span>
+                      <span>{def.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Password Reset */}
+              <div className="border-t border-white/10 pt-4">
+                <label className="text-xs text-gray-400 mb-2 block">🔑 {t('resetPassword')}</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    className="input-dark py-2 flex-1"
+                    placeholder={t('newPassword')}
+                    value={resetPassword}
+                    onChange={e => setResetPassword(e.target.value)}
+                    minLength={6}
+                  />
+                  <button
+                    onClick={handleResetPassword}
+                    disabled={resettingPassword || !resetPassword}
+                    className="px-4 py-2 rounded-xl bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-all text-sm border border-amber-500/20 disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {resettingPassword ? '...' : t('resetPassword')}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{t('minimumPassword')}</p>
               </div>
             </div>
             <div className="p-5 border-t border-white/10 flex justify-end gap-3 bg-white/[0.02]">

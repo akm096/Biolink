@@ -103,14 +103,25 @@ router.put('/me', authMiddleware, (req, res) => {
       req.userId
     );
 
-    // Update badges if provided
+    // Update badges if provided — protect admin-only badges
     if (badges && Array.isArray(badges)) {
-      const allowedBadges = ['verified', 'early_user', 'creator', 'developer', 'music', 'gamer'];
-      const validBadges = badges.filter(b => allowedBadges.includes(b));
+      const ADMIN_ONLY_BADGES = ['verified', 'early_user'];
+      const USER_ALLOWED_BADGES = ['creator', 'developer', 'music', 'gamer'];
+
+      // Preserve admin-only badges from DB (user cannot add or remove them)
+      const existingAdminBadges = db.prepare(
+        'SELECT badge_type FROM badges WHERE user_id = ? AND badge_type IN (?, ?)'
+      ).all(req.userId, ...ADMIN_ONLY_BADGES).map(b => b.badge_type);
+
+      // Only keep user-allowed badges from the request
+      const userBadges = badges.filter(b => USER_ALLOWED_BADGES.includes(b));
+
+      // Merge: admin-only from DB + user-selected
+      const finalBadges = [...new Set([...existingAdminBadges, ...userBadges])];
 
       db.prepare('DELETE FROM badges WHERE user_id = ?').run(req.userId);
       const insertBadge = db.prepare('INSERT INTO badges (user_id, badge_type) VALUES (?, ?)');
-      for (const badge of validBadges) {
+      for (const badge of finalBadges) {
         insertBadge.run(req.userId, badge);
       }
     }

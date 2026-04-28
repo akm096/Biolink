@@ -309,9 +309,11 @@ export default function Dashboard() {
                 ))}
               </div>
               <div>
-                <label className="text-xs text-gray-400 mb-2 block">{t('badges')}</label>
+                <label className="text-xs text-gray-400 mb-2 block">{t('userBadges')}</label>
                 <div className="flex flex-wrap gap-2">
-                  {Object.entries(BADGE_DEFS).map(([key, def]) => (
+                  {Object.entries(BADGE_DEFS)
+                    .filter(([key]) => !['verified', 'early_user'].includes(key))
+                    .map(([key, def]) => (
                     <button key={key} type="button" onClick={() => toggleBadge(key)}
                       className={`badge transition-all ${form.badges.includes(key) ? 'ring-1' : 'opacity-50 hover:opacity-80'}`}
                       style={{ background: `${def.color}20`, color: def.color, border: `1px solid ${def.color}${form.badges.includes(key) ? '60' : '20'}` }}>
@@ -320,6 +322,24 @@ export default function Dashboard() {
                     </button>
                   ))}
                 </div>
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 mb-2 block">{t('systemBadges')} 🔒</label>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(BADGE_DEFS)
+                    .filter(([key]) => ['verified', 'early_user'].includes(key))
+                    .map(([key, def]) => (
+                    <span key={key}
+                      className={`badge transition-all cursor-default ${form.badges.includes(key) ? '' : 'opacity-30'}`}
+                      style={{ background: `${def.color}20`, color: def.color, border: `1px solid ${def.color}${form.badges.includes(key) ? '60' : '20'}` }}
+                      title={t('adminOnlyBadge')}>
+                      <span>{def.icon}</span>
+                      <span>{def.label}</span>
+                      <span style={{ fontSize: '10px', opacity: 0.6 }}>🔒</span>
+                    </span>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{t('adminOnlyBadgeDesc')}</p>
               </div>
             </div>
 

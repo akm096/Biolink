@@ -38,6 +38,15 @@ Proje Cloudflare icin iki ana parcadan olusur:
 
 Cloudflare deploy hedefinde API katmani `worker/` altindaki Cloudflare Worker ile calisir ve veritabani olarak D1 kullanir.
 
+## Canlı Demo
+
+Projenin hazır çalışan örneğine aşağıdaki linklerden bakabilirsiniz:
+
+- Demo site: https://biolink.sensei.web.tr/
+- Örnek profil: https://biolink.sensei.web.tr/akm09
+
+Örnek profil linki, public bio-link sayfasının gerçek kullanımda nasıl göründüğünü göstermek için eklenmiştir.
+
 ## Klasor Yapisi
 
 ```text
